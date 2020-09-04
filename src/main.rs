@@ -1,15 +1,47 @@
-use crate::core::{Lesson, LessonRecord};
+extern crate chrono;
+extern crate rand;
+
+use std::io::{stdout, Write};
+use std::process::exit;
+
+use chrono::Local;
+use rand::prelude::*;
+
+use crate::core::{Lesson, StudentRecord};
 
 mod core;
 
 fn main() {
-	let records = records();
-	println!("Lessons: {:?}", records);
-}
-
-fn records() -> Vec<LessonRecord> {
-	let lesson_records = LESSONS.iter().map(LessonRecord::new).collect();
-	lesson_records
+	let student_record = StudentRecord::new(&LESSONS);
+	let now = Local::now().timestamp();
+	let mut rng = rand::thread_rng();
+	let mut new_or_rested = student_record.new_or_rested_lessons(now);
+	if new_or_rested.len() == 0 {
+		println!("No active lessons, {} resting.", student_record.resting_lessons_count(now))
+	} else {
+		new_or_rested.shuffle(&mut rng);
+		let lesson = new_or_rested[0];
+		println!("RECALL: {}", match lesson { Lesson::Recall(_level, challenge, _solution) => challenge });
+		print!("show|cancel: ");
+		stdout().flush().unwrap();
+		let input = {
+			let mut input = String::new();
+			std::io::stdin().read_line(&mut input).expect("Invalid command after challenge");
+			input
+		};
+		if !input.starts_with("show") {
+			exit(0)
+		}
+		println!("{}", match lesson { Lesson::Recall(_level, _challenge, solution) => solution });
+		print!("repeat|pass|quit: ");
+		stdout().flush().unwrap();
+		let input = {
+			let mut input = String::new();
+			std::io::stdin().read_line(&mut input).expect("Invalid command after solution");
+			input
+		};
+		println!("{}", input);
+	}
 }
 
 const LESSONS: [Lesson; 19] = [
