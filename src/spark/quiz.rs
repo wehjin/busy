@@ -10,12 +10,12 @@ use crate::core::{Difficulty, Lesson, StudentRecord};
 const SIDE_WIDTH: i32 = 25;
 
 #[derive(Debug)]
-pub struct MainSpark {
+pub struct QuizSpark {
 	pub student_record: StudentRecord
 }
 
 #[derive(Debug, Clone)]
-pub struct MainState {
+pub struct QuizState {
 	resting_count: usize,
 	lessons: Vec<Lesson>,
 	lesson_index: usize,
@@ -25,7 +25,7 @@ pub struct MainState {
 }
 
 #[derive(Debug)]
-pub enum MainAction {
+pub enum QuizAction {
 	Quit,
 	CheckAnswer,
 	Back,
@@ -33,32 +33,32 @@ pub enum MainAction {
 	Space,
 }
 
-impl Spark for MainSpark {
-	type State = MainState;
-	type Action = MainAction;
+impl Spark for QuizSpark {
+	type State = QuizState;
+	type Action = QuizAction;
 	type Report = HashMap<Lesson, Difficulty>;
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
 		let now = Local::now().timestamp();
 		let lessons = next_lessons(3, now, &self.student_record);
 		let resting_count = self.student_record.resting_lessons_count(now);
-		MainState { resting_count, lessons, lesson_index: 0, check_answer: false, spaced_count: 0, results: HashMap::new() }
+		QuizState { resting_count, lessons, lesson_index: 0, check_answer: false, spaced_count: 0, results: HashMap::new() }
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
-			MainAction::Quit => AfterFlow::Close(None),
-			MainAction::CheckAnswer => {
+			QuizAction::Quit => AfterFlow::Close(None),
+			QuizAction::CheckAnswer => {
 				let mut state = ctx.state().clone();
 				state.check_answer = true;
 				AfterFlow::Revise(state)
 			}
-			MainAction::Back => {
+			QuizAction::Back => {
 				let mut state = ctx.state().clone();
 				state.check_answer = false;
 				AfterFlow::Revise(state)
 			}
-			MainAction::Repeat => {
+			QuizAction::Repeat => {
 				let mut state = ctx.state().clone();
 				let repeat_lesson = state.lessons[state.lesson_index].clone();
 				state.lesson_index = (state.lesson_index + 1) % state.lessons.len();
@@ -66,7 +66,7 @@ impl Spark for MainSpark {
 				state.results.insert(repeat_lesson, Difficulty::Hard);
 				AfterFlow::Revise(state)
 			}
-			MainAction::Space => {
+			QuizAction::Space => {
 				let mut state = ctx.state().clone();
 				let spaced_lesson = state.lessons.remove(state.lesson_index);
 				state.lesson_index = if state.lessons.is_empty() { 0 } else { state.lesson_index % state.lessons.len() };
@@ -92,16 +92,16 @@ impl Spark for MainSpark {
 			let yard = if state.check_answer {
 				let content_yard = solution_body_yard(state);
 				let side_yard = side_yard(state, vec![
-					yard::button_enabled("Back", link.callback(move |_| MainAction::Back)),
-					yard::button_enabled("Repeat", link.callback(move |_| MainAction::Repeat)),
-					yard::button_enabled("Space", link.callback(move |_| MainAction::Space)),
+					yard::button_enabled("Back", link.callback(move |_| QuizAction::Back)),
+					yard::button_enabled("Repeat", link.callback(move |_| QuizAction::Repeat)),
+					yard::button_enabled("Space", link.callback(move |_| QuizAction::Space)),
 				]);
 				content_yard.pack_right(SIDE_WIDTH, side_yard)
 			} else {
 				let content_yard = challenge_body_yard(state);
 				let side_yard = side_yard(state, vec![
-					yard::button_enabled("Check Answer", link.callback(move |_| MainAction::CheckAnswer)),
-					yard::button_enabled("Quit", link.callback(move |_| MainAction::Quit)),
+					yard::button_enabled("Check Answer", link.callback(move |_| QuizAction::CheckAnswer)),
+					yard::button_enabled("Quit", link.callback(move |_| QuizAction::Quit)),
 				]);
 				content_yard.pack_right(SIDE_WIDTH, side_yard)
 			};
@@ -120,7 +120,7 @@ fn next_lessons(count: usize, now: i64, student_record: &StudentRecord) -> Vec<L
 	new_or_rested.into_iter().cloned().collect()
 }
 
-fn solution_body_yard(state: &MainState) -> ArcYard {
+fn solution_body_yard(state: &QuizState) -> ArcYard {
 	let lesson = &state.lessons[state.lesson_index];
 	match lesson {
 		&Lesson::Recall(_, _, solution) => {
@@ -130,7 +130,7 @@ fn solution_body_yard(state: &MainState) -> ArcYard {
 	}
 }
 
-fn challenge_body_yard(state: &MainState) -> ArcYard {
+fn challenge_body_yard(state: &QuizState) -> ArcYard {
 	let lesson = &state.lessons[state.lesson_index];
 	match lesson {
 		&Lesson::Recall(_, challenge, _) => {
@@ -140,7 +140,7 @@ fn challenge_body_yard(state: &MainState) -> ArcYard {
 	}
 }
 
-fn side_yard(state: &MainState, button_yards: Vec<ArcYard>) -> ArcYard {
+fn side_yard(state: &QuizState, button_yards: Vec<ArcYard>) -> ArcYard {
 	let position_label = {
 		let text = format!("Lesson {} of {}", state.spaced_count + 1, state.lessons.len() + state.spaced_count);
 		yard::label(text, StrokeColor::CommentOnBackground, Cling::RightTop)

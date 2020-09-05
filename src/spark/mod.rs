@@ -1,3 +1,3 @@
-pub use self::main::*;
+pub use self::quiz::*;
 
-mod main;
+mod quiz;
