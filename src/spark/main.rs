@@ -20,6 +20,7 @@ pub struct MainState {
 	lessons: Vec<Lesson>,
 	lesson_index: usize,
 	check_answer: bool,
+	spaced_count: usize,
 	results: HashMap<Lesson, Difficulty>,
 }
 
@@ -28,6 +29,7 @@ pub enum MainAction {
 	Quit,
 	CheckAnswer,
 	Back,
+	Repeat,
 	Space,
 }
 
@@ -40,7 +42,7 @@ impl Spark for MainSpark {
 		let now = Local::now().timestamp();
 		let lessons = next_lessons(3, now, &self.student_record);
 		let resting_count = self.student_record.resting_lessons_count(now);
-		MainState { resting_count, lessons, lesson_index: 0, check_answer: false, results: HashMap::new() }
+		MainState { resting_count, lessons, lesson_index: 0, check_answer: false, spaced_count: 0, results: HashMap::new() }
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -56,11 +58,20 @@ impl Spark for MainSpark {
 				state.check_answer = false;
 				AfterFlow::Revise(state)
 			}
+			MainAction::Repeat => {
+				let mut state = ctx.state().clone();
+				let repeat_lesson = state.lessons[state.lesson_index].clone();
+				state.lesson_index = (state.lesson_index + 1) % state.lessons.len();
+				state.check_answer = false;
+				state.results.insert(repeat_lesson, Difficulty::Hard);
+				AfterFlow::Revise(state)
+			}
 			MainAction::Space => {
 				let mut state = ctx.state().clone();
 				let spaced_lesson = state.lessons.remove(state.lesson_index);
 				state.lesson_index = if state.lessons.is_empty() { 0 } else { state.lesson_index % state.lessons.len() };
 				state.check_answer = false;
+				state.spaced_count += 1;
 				if !state.results.contains_key(&spaced_lesson) {
 					state.results.insert(spaced_lesson, Difficulty::Easy);
 				}
@@ -82,7 +93,7 @@ impl Spark for MainSpark {
 				let content_yard = solution_body_yard(state);
 				let side_yard = side_yard(state, vec![
 					yard::button_enabled("Back", link.callback(move |_| MainAction::Back)),
-					yard::button_enabled("Repeat", link.callback(move |_| MainAction::Back)),
+					yard::button_enabled("Repeat", link.callback(move |_| MainAction::Repeat)),
 					yard::button_enabled("Space", link.callback(move |_| MainAction::Space)),
 				]);
 				content_yard.pack_right(SIDE_WIDTH, side_yard)
@@ -131,7 +142,7 @@ fn challenge_body_yard(state: &MainState) -> ArcYard {
 
 fn side_yard(state: &MainState, button_yards: Vec<ArcYard>) -> ArcYard {
 	let position_label = {
-		let text = format!("Lesson {} of {}", state.lesson_index + 1, state.lessons.len());
+		let text = format!("Lesson {} of {}", state.spaced_count + 1, state.lessons.len() + state.spaced_count);
 		yard::label(text, StrokeColor::CommentOnBackground, Cling::RightTop)
 	};
 	let button_section = yard::trellis(1, 1, Cling::Right, button_yards)
