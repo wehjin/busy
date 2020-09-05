@@ -1,47 +1,19 @@
 extern crate chrono;
 extern crate rand;
+extern crate yui;
 
-use std::io::{stdout, Write};
-use std::process::exit;
-
-use chrono::Local;
-use rand::prelude::*;
+use std::error::Error;
 
 use crate::core::{Lesson, StudentRecord};
+use crate::spark::MainSpark;
 
 mod core;
+mod spark;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
 	let student_record = StudentRecord::new(&LESSONS);
-	let now = Local::now().timestamp();
-	let mut rng = rand::thread_rng();
-	let mut new_or_rested = student_record.new_or_rested_lessons(now);
-	if new_or_rested.len() == 0 {
-		println!("No active lessons, {} resting.", student_record.resting_lessons_count(now))
-	} else {
-		new_or_rested.shuffle(&mut rng);
-		let lesson = new_or_rested[0];
-		println!("RECALL: {}", match lesson { Lesson::Recall(_level, challenge, _solution) => challenge });
-		print!("show|cancel: ");
-		stdout().flush().unwrap();
-		let input = {
-			let mut input = String::new();
-			std::io::stdin().read_line(&mut input).expect("Invalid command after challenge");
-			input
-		};
-		if !input.starts_with("show") {
-			exit(0)
-		}
-		println!("{}", match lesson { Lesson::Recall(_level, _challenge, solution) => solution });
-		print!("repeat|pass|quit: ");
-		stdout().flush().unwrap();
-		let input = {
-			let mut input = String::new();
-			std::io::stdin().read_line(&mut input).expect("Invalid command after solution");
-			input
-		};
-		println!("{}", input);
-	}
+	yui::main(MainSpark { student_record })?;
+	Ok(())
 }
 
 const LESSONS: [Lesson; 19] = [

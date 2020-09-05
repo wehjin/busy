@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 chrono = "0.4.15"
 rand = "0.7"
+yui = { git = "https://github.com/wehjin/yui.git" }
