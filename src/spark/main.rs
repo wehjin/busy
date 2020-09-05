@@ -5,6 +5,8 @@ use yui::prelude::*;
 
 use crate::core::{Lesson, StudentRecord};
 
+const SIDE_WIDTH: i32 = 20;
+
 #[derive(Debug)]
 pub struct MainSpark {
 	pub student_record: StudentRecord
@@ -17,11 +19,14 @@ pub struct MainState {
 	lessons_index: usize,
 }
 
-const SIDE_WIDTH: i32 = 20;
+#[derive(Debug)]
+pub enum MainAction {
+	Quit
+}
 
 impl Spark for MainSpark {
 	type State = MainState;
-	type Action = ();
+	type Action = MainAction;
 	type Report = ();
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
@@ -31,17 +36,20 @@ impl Spark for MainSpark {
 		MainState { resting_count, lessons, lessons_index: 0 }
 	}
 
-	fn flow(&self, _action: Self::Action, _ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
-		AfterFlow::Ignore
+	fn flow(&self, action: Self::Action, _ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
+		match action {
+			MainAction::Quit => AfterFlow::Close(None),
+		}
 	}
 
-	fn render(state: &Self::State, _link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		if state.lessons.len() == 0 {
 			let text = format!("No active lessons. {} resting.", state.resting_count);
 			Some(yard::label(text, StrokeColor::CommentOnBackground, Cling::Center))
 		} else {
 			let content_yard = challenge_body_yard(state);
-			let yard = content_yard.pack_right(SIDE_WIDTH, challenge_side_yard(state));
+			let side_yard = challenge_side_yard(state, link);
+			let yard = content_yard.pack_right(SIDE_WIDTH, side_yard);
 			Some(yard)
 		}
 	}
@@ -67,16 +75,16 @@ fn challenge_body_yard(state: &MainState) -> ArcYard {
 	}
 }
 
-fn challenge_side_yard(state: &MainState) -> ArcYard {
+fn challenge_side_yard(state: &MainState, link: &Link<MainAction>) -> ArcYard {
 	let position_label = {
 		let text = format!("Lesson {} of {}", state.lessons_index + 1, state.lessons.len());
 		yard::label(text, StrokeColor::CommentOnBackground, Cling::RightTop)
 	};
 	let button_cluster = {
-		yard::trellis(1, 1, vec![
+		yard::trellis(1, 1, Cling::Right, vec![
 			yard::button_enabled("Check Answer", |_| {}),
-			yard::button_enabled("Quit", |_| {}),
-		]).confine_height(3, Cling::Center)
+			yard::button_enabled("Quit", link.callback(move |_| MainAction::Quit)),
+		])
 	}.confine_width(SIDE_WIDTH - 2, Cling::Right);
 	let front = button_cluster.pack_top(2, position_label);
 	front.before(yard::fill(FillColor::Primary))
