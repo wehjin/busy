@@ -1,19 +1,33 @@
 extern crate chrono;
+extern crate dirs;
+extern crate echo_lib;
 extern crate rand;
+extern crate serde;
+extern crate serde_json;
 extern crate yui;
 
 use std::error::Error;
+use std::path::PathBuf;
 
-use crate::core::{Lesson, StudentRecord};
+use echo_lib::kv;
+
+use crate::core::Lesson;
 use crate::spark::LaunchSpark;
 
 mod core;
 mod spark;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let student_record = StudentRecord::new(&LESSONS);
-	yui::main(LaunchSpark { student_record })?;
+	let data_folder = data_folder();
+	let kv_store = kv::open("kv-store-1", &data_folder)?;
+	yui::main(LaunchSpark { lessons: &LESSONS, kv_store })?;
 	Ok(())
+}
+
+fn data_folder() -> PathBuf {
+	let mut dir = dirs::home_dir().expect("No home directory");
+	dir.push(".busy");
+	dir
 }
 
 const LESSONS: [Lesson; 19] = [

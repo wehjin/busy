@@ -1,3 +1,5 @@
+use echo_lib::kv;
+
 pub use lesson_record::*;
 pub use student_record::*;
 
@@ -14,3 +16,5 @@ pub enum Difficulty {
 	Hard,
 	Easy,
 }
+
+impl kv::Key for Lesson {}

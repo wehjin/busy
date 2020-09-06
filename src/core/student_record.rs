@@ -1,17 +1,43 @@
+use std::collections::HashMap;
+
+use chrono::Local;
+use echo_lib::kv;
 use rand::prelude::SliceRandom;
 
-use crate::core::{Lesson, LessonRecord};
+use crate::core::{Difficulty, Lesson, LessonRecord, PassInfo};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StudentRecord {
 	lesson_records: Vec<LessonRecord>
 }
 
 impl StudentRecord {
-	pub fn new(lessons: &[Lesson]) -> Self {
-		StudentRecord {
-			lesson_records: lessons.iter().map(LessonRecord::new).collect()
-		}
+	pub fn new(lessons: &'static [Lesson], kv_catalog: &kv::Catalog) -> Self {
+		let lesson_records = lessons.iter()
+			.map(|it| {
+				let lesson = it.clone();
+				let pass_info = kv_catalog.read(it, || PassInfo::new()).expect("Catalog read failed");
+				LessonRecord { lesson, pass_info }
+			})
+			.collect::<Vec<_>>();
+		StudentRecord { lesson_records }
+	}
+	pub fn update(&self, results: HashMap<Lesson, Difficulty>) -> StudentRecord {
+		let now = Local::now().timestamp();
+		let lesson_records = self.lesson_records.iter()
+			.map(|it| it.update_hashmap(&results, now))
+			.collect::<Vec<_>>();
+		StudentRecord { lesson_records }
+	}
+	pub fn write(&self, store: &kv::Store) {
+		let catalog = store.catalog().expect("No catalog from store");
+		self.lesson_records.iter().for_each(|it| {
+			let lesson = &it.lesson;
+			let stored_info = catalog.read(lesson, || PassInfo::new()).expect("Catalog read failed");
+			if it.pass_info != stored_info {
+				store.write(lesson, &it.pass_info).expect("Store write failed");
+			}
+		});
 	}
 
 	pub fn resting_lessons_count(&self, now: i64) -> usize {

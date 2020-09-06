@@ -1,7 +1,8 @@
 use chrono::Local;
+use echo_lib::kv;
 use yui::prelude::*;
 
-use crate::core::StudentRecord;
+use crate::core::{Lesson, StudentRecord};
 use crate::spark::QuizSpark;
 
 pub use self::core::*;
@@ -11,7 +12,8 @@ mod core;
 const TAKE_COUNT: usize = 3;
 
 pub struct LaunchSpark {
-	pub student_record: StudentRecord
+	pub lessons: &'static [Lesson],
+	pub kv_store: kv::Store,
 }
 
 impl Spark for LaunchSpark {
@@ -20,27 +22,30 @@ impl Spark for LaunchSpark {
 	type Report = ();
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
-		let now = Local::now().timestamp();
-		let new_or_rested_lessons = self.student_record.new_or_rested_lessons(now);
-		if new_or_rested_lessons.is_empty() {
-			let resting_count = self.student_record.resting_lessons_count(now);
-			LaunchState::Empty { resting_count }
-		} else {
-			let new_or_rested_count = new_or_rested_lessons.len();
-			LaunchState::Ready { new_or_rested_count }
-		}
+		self.fresh_state()
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			LaunchAction::Close => AfterFlow::Close(None),
 			LaunchAction::Take => {
-				let now = Local::now().timestamp();
-				let lessons = self.student_record.next_lessons(TAKE_COUNT, now);
-				let resting_count = self.student_record.resting_lessons_count(now);
-				let quiz_spark = QuizSpark { lessons, resting_count };
-				ctx.start_prequel(quiz_spark, |_| {});
+				if let LaunchState::Ready { student_record, .. } = ctx.state() {
+					let now = Local::now().timestamp();
+					let lessons = student_record.next_lessons(TAKE_COUNT, now);
+					let resting_count = student_record.resting_lessons_count(now);
+					let quiz_spark = QuizSpark { lessons, resting_count };
+					ctx.start_prequel(quiz_spark, ctx.link().callback(LaunchAction::Record));
+				}
 				AfterFlow::Ignore
+			}
+			LaunchAction::Record(results) => {
+				if let LaunchState::Ready { student_record, .. } = ctx.state() {
+					student_record.update(results).write(&self.kv_store);
+					let state = self.fresh_state();
+					AfterFlow::Revise(state)
+				} else {
+					AfterFlow::Ignore
+				}
 			}
 		}
 	}
@@ -53,8 +58,11 @@ impl Spark for LaunchSpark {
 					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close))
 				]
 			),
-			LaunchState::Ready { new_or_rested_count } => (
-				yard::label(format!("{} lessons ready", new_or_rested_count), StrokeColor::BodyOnBackground, Cling::Center),
+			LaunchState::Ready { student_record, now } => (
+				{
+					let ready_count = student_record.new_or_rested_lessons(*now).len();
+					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center)
+				},
 				vec![
 					yard::button_enabled("Take 3", link.callback(move |_| LaunchAction::Take)),
 					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close)),
@@ -69,3 +77,15 @@ impl Spark for LaunchSpark {
 	}
 }
 
+impl LaunchSpark {
+	fn fresh_state(&self) -> LaunchState {
+		let now = Local::now().timestamp();
+		let kv_catalog = self.kv_store.catalog().unwrap();
+		let student_record = StudentRecord::new(&self.lessons, &kv_catalog);
+		if student_record.new_or_rested_lessons(now).is_empty() {
+			LaunchState::Empty { resting_count: student_record.resting_lessons_count(now) }
+		} else {
+			LaunchState::Ready { student_record, now }
+		}
+	}
+}
