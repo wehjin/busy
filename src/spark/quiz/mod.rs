@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 
-use chrono::Local;
-use rand::prelude::*;
 use yui::Before;
 use yui::prelude::*;
 
-use crate::core::{Difficulty, Lesson, StudentRecord};
+use crate::core::{Difficulty, Lesson};
 
 const SIDE_WIDTH: i32 = 25;
 
 #[derive(Debug)]
 pub struct QuizSpark {
-	pub student_record: StudentRecord
+	pub lessons: Vec<Lesson>,
+	pub resting_count: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -39,10 +38,14 @@ impl Spark for QuizSpark {
 	type Report = HashMap<Lesson, Difficulty>;
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
-		let now = Local::now().timestamp();
-		let lessons = next_lessons(3, now, &self.student_record);
-		let resting_count = self.student_record.resting_lessons_count(now);
-		QuizState { resting_count, lessons, lesson_index: 0, check_answer: false, spaced_count: 0, results: HashMap::new() }
+		QuizState {
+			resting_count: self.resting_count,
+			lessons: self.lessons.clone(),
+			lesson_index: 0,
+			check_answer: false,
+			spaced_count: 0,
+			results: HashMap::new(),
+		}
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -108,16 +111,6 @@ impl Spark for QuizSpark {
 			Some(yard)
 		}
 	}
-}
-
-fn next_lessons(count: usize, now: i64, student_record: &StudentRecord) -> Vec<Lesson> {
-	let mut rng = rand::thread_rng();
-	let mut new_or_rested = student_record.new_or_rested_lessons(now);
-	if new_or_rested.len() > count {
-		new_or_rested.shuffle(&mut rng);
-		new_or_rested.truncate(count);
-	}
-	new_or_rested.into_iter().cloned().collect()
 }
 
 fn solution_body_yard(state: &QuizState) -> ArcYard {

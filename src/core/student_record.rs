@@ -1,3 +1,5 @@
+use rand::prelude::SliceRandom;
+
 use crate::core::{Lesson, LessonRecord};
 
 #[derive(Debug)]
@@ -19,5 +21,11 @@ impl StudentRecord {
 		self.lesson_records.iter()
 			.filter(|it| it.is_new() || it.is_rested(now))
 			.map(|it| &it.lesson).collect()
+	}
+	pub fn next_lessons(&self, count: usize, now: i64) -> Vec<Lesson> {
+		let mut lessons = self.new_or_rested_lessons(now);
+		lessons.shuffle(&mut rand::thread_rng());
+		lessons.truncate(count);
+		lessons.into_iter().cloned().collect()
 	}
 }

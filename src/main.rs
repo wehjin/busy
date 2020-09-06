@@ -5,14 +5,14 @@ extern crate yui;
 use std::error::Error;
 
 use crate::core::{Lesson, StudentRecord};
-use crate::spark::QuizSpark;
+use crate::spark::LaunchSpark;
 
 mod core;
 mod spark;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let student_record = StudentRecord::new(&LESSONS);
-	yui::main(QuizSpark { student_record })?;
+	yui::main(LaunchSpark { student_record })?;
 	Ok(())
 }
 
