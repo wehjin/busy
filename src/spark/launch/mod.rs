@@ -2,6 +2,7 @@ use chrono::Local;
 use echo_lib::kv;
 use yui::prelude::*;
 
+use crate::constants::TAKE_COUNT;
 use crate::core::{Lesson, StudentRecord};
 use crate::spark::QuizSpark;
 
@@ -9,7 +10,6 @@ pub use self::core::*;
 
 mod core;
 
-const TAKE_COUNT: usize = 3;
 
 pub struct LaunchSpark {
 	pub lessons: &'static [Lesson],
@@ -53,7 +53,7 @@ impl Spark for LaunchSpark {
 	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let (status, button_data) = match state {
 			LaunchState::Empty { resting_count } => (
-				yard::label(format!("{} lessons resting, none active", resting_count), StrokeColor::BodyOnBackground, Cling::Center),
+				yard::label(format!("{} lessons resting", resting_count), StrokeColor::BodyOnBackground, Cling::Center),
 				vec![
 					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close))
 				]
@@ -64,7 +64,7 @@ impl Spark for LaunchSpark {
 					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center)
 				},
 				vec![
-					yard::button_enabled("Take 3", link.callback(move |_| LaunchAction::Take)),
+					yard::button_enabled(format!("Take {}", TAKE_COUNT), link.callback(move |_| LaunchAction::Take)),
 					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close)),
 				]
 			),

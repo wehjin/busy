@@ -11,15 +11,28 @@ use std::path::PathBuf;
 
 use echo_lib::kv;
 
+use crate::constants::STORE_NAME;
 use crate::core::Lesson;
 use crate::spark::LaunchSpark;
 
 mod core;
 mod spark;
 
+#[cfg(debug_assertions)]
+mod constants {
+	pub const TAKE_COUNT: usize = 3;
+	pub const STORE_NAME: &str = "kv-store-1-dbg";
+}
+
+#[cfg(not(debug_assertions))]
+mod constants {
+	pub const TAKE_COUNT: usize = 10;
+	pub const STORE_NAME: &str = "kv-store-1";
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
 	let data_folder = data_folder();
-	let kv_store = kv::open("kv-store-1", &data_folder)?;
+	let kv_store = kv::open(STORE_NAME, &data_folder)?;
 	yui::main(LaunchSpark { lessons: &LESSONS, kv_store })?;
 	Ok(())
 }
