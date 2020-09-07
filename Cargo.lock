@@ -380,6 +380,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicode-width"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
+
+[[package]]
 name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -422,11 +428,12 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#f69cf9994f766d6b5aa4f8b52a05ffd037d3c144"
+source = "git+https://github.com/wehjin/yui.git#016a38c45a4062ee6215840cdcf5bfbd09654031"
 dependencies = [
  "log",
  "ncurses",
  "rand",
  "simplelog",
  "stringedit",
+ "unicode-width",
 ]
