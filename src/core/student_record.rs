@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::Local;
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use echo_lib::kv;
 use rand::prelude::SliceRandom;
 
@@ -39,7 +39,17 @@ impl StudentRecord {
 			}
 		});
 	}
-
+	pub fn rest_end(&self) -> Option<DateTime<Local>> {
+		let never = i64::max_value();
+		let min_rest_end = self.lesson_records.iter().fold(never, |stamp, next_record| {
+			stamp.min(next_record.rest_end())
+		});
+		if min_rest_end == never { None } else {
+			let naive_end = NaiveDateTime::from_timestamp(min_rest_end, 0);
+			let end = Local.from_utc_datetime(&naive_end);
+			Some(end)
+		}
+	}
 	pub fn resting_lessons_count(&self, now: i64) -> usize {
 		self.lesson_records.iter().filter(|it| it.is_resting(now)).count()
 	}

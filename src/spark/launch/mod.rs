@@ -52,8 +52,16 @@ impl Spark for LaunchSpark {
 
 	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let (status, button_data) = match state {
-			LaunchState::Empty { resting_count } => (
-				yard::label(format!("{} lessons resting", resting_count), StrokeColor::BodyOnBackground, Cling::Center),
+			LaunchState::Empty { rest_status } => (
+				{
+					let text = match rest_status {
+						RestStatus::Empty => "No lessons".to_string(),
+						RestStatus::Some { count, end } => {
+							format!("{} resting until {}", count, end.format("%b %-e %T (%a)"))
+						}
+					};
+					yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
+				},
 				vec![
 					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close))
 				]
@@ -83,7 +91,15 @@ impl LaunchSpark {
 		let kv_catalog = self.kv_store.catalog().unwrap();
 		let student_record = StudentRecord::new(&self.lessons, &kv_catalog);
 		if student_record.new_or_rested_lessons(now).is_empty() {
-			LaunchState::Empty { resting_count: student_record.resting_lessons_count(now) }
+			let rest_status = {
+				let count = student_record.resting_lessons_count(now);
+				if count == 0 {
+					RestStatus::Empty
+				} else {
+					RestStatus::Some { count, end: student_record.rest_end().unwrap() }
+				}
+			};
+			LaunchState::Empty { rest_status }
 		} else {
 			LaunchState::Ready { student_record, now }
 		}

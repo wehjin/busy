@@ -50,10 +50,15 @@ impl LessonRecord {
 	pub fn is_new(&self) -> bool { self.pass_info.count == 0 }
 	pub fn is_rested(&self, now: i64) -> bool { self.pass_info.count > 0 && now > self.rest_end() }
 	pub fn is_resting(&self, now: i64) -> bool { self.pass_info.count > 0 && now <= self.rest_end() }
-	fn rest_end(&self) -> i64 {
+	pub fn rest_end(&self) -> i64 {
 		const REST_DAYS: [i64; 10] = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512];
-		let days = REST_DAYS[self.pass_info.count.min(REST_DAYS.len() - 1)];
-		let hours = days * 24;
-		self.pass_info.stamp + (hours - 1) * 3600
+		let pass_count = self.pass_info.count;
+		if pass_count == 0 {
+			0
+		} else {
+			let rest_days_index = (pass_count - 1).min(REST_DAYS.len() - 1);
+			let hours = REST_DAYS[rest_days_index] * 24;
+			self.pass_info.stamp + (hours - 1) * 3600
+		}
 	}
 }

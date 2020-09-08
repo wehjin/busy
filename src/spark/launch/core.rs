@@ -1,10 +1,18 @@
 use std::collections::HashMap;
 
+use chrono::{DateTime, Local};
+
 use crate::core::{Difficulty, Lesson, StudentRecord};
+
+#[derive(Debug, Copy, Clone)]
+pub enum RestStatus {
+	Empty,
+	Some { count: usize, end: DateTime<Local> },
+}
 
 #[derive(Debug, Clone)]
 pub enum LaunchState {
-	Empty { resting_count: usize },
+	Empty { rest_status: RestStatus },
 	Ready { student_record: StudentRecord, now: i64 },
 }
 
