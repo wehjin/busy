@@ -141,5 +141,5 @@ fn side_yard(state: &QuizState, button_yards: Vec<ArcYard>) -> ArcYard {
 	let button_section = yard::trellis(1, 1, Cling::Right, button_yards)
 		.confine_width(SIDE_WIDTH - 6, Cling::Center);
 	let front = button_section.pack_top(2, position_label);
-	front.before(yard::fill(FillColor::Primary)).pad(1)
+	front.before(yard::fill(FillColor::Primary))
 }
