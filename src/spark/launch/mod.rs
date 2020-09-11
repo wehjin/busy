@@ -1,6 +1,7 @@
 use chrono::Local;
 use echo_lib::kv;
 use yui::prelude::*;
+use yui::prelude::yard::ButtonState;
 
 use crate::constants::TAKE_COUNT;
 use crate::core::{Lesson, StudentRecord};
@@ -63,7 +64,7 @@ impl Spark for LaunchSpark {
 					yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
 				},
 				vec![
-					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close))
+					yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close)))
 				]
 			),
 			LaunchState::Ready { student_record, now } => (
@@ -72,8 +73,8 @@ impl Spark for LaunchSpark {
 					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center)
 				},
 				vec![
-					yard::button_enabled(format!("Take {}", TAKE_COUNT), link.callback(move |_| LaunchAction::Take)),
-					yard::button_enabled("Close", link.callback(move |_| LaunchAction::Close)),
+					yard::button(format!("Take {}", TAKE_COUNT), ButtonState::default(link.callback(move |_| LaunchAction::Take))),
+					yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close))),
 				]
 			),
 		};
