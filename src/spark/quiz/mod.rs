@@ -5,6 +5,7 @@ use yui::prelude::*;
 use yui::prelude::yard::ButtonState;
 
 use crate::core::{Difficulty, Lesson};
+use crate::VocabRecord;
 
 const SIDE_WIDTH: i32 = 25;
 
@@ -116,22 +117,22 @@ impl Spark for QuizSpark {
 
 fn solution_body_yard(state: &QuizState) -> ArcYard {
 	let lesson = &state.lessons[state.lesson_index];
-	match lesson {
-		&Lesson::Recall(_, _, solution) => {
-			let text = format!("{}", solution);
-			yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
-		}
-	}
+	let solution = match lesson {
+		&Lesson::StaticEnglishKana(_, _, solution) => solution,
+		&Lesson::Dynamic(VocabRecord { ref jp, .. }) => jp,
+	};
+	let text = format!("{}", solution);
+	yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
 }
 
 fn challenge_body_yard(state: &QuizState) -> ArcYard {
 	let lesson = &state.lessons[state.lesson_index];
-	match lesson {
-		&Lesson::Recall(_, challenge, _) => {
-			let text = format!("{}", challenge);
-			yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
-		}
-	}
+	let challenge = match lesson {
+		&Lesson::StaticEnglishKana(_, challenge, _) => challenge,
+		&Lesson::Dynamic(VocabRecord { ref en, .. }) => en,
+	};
+	let text = format!("{}", challenge);
+	yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
 }
 
 fn side_yard(state: &QuizState, button_yards: Vec<ArcYard>) -> ArcYard {

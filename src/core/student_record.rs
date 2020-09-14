@@ -12,7 +12,7 @@ pub struct StudentRecord {
 }
 
 impl StudentRecord {
-	pub fn new(lessons: &'static [Lesson], kv_catalog: &kv::Catalog) -> Self {
+	pub fn new(lessons: &Vec<Lesson>, kv_catalog: &kv::Catalog) -> Self {
 		let lesson_records = lessons.iter()
 			.map(|it| {
 				let lesson = it.clone();

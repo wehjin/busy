@@ -11,9 +11,8 @@ pub use self::core::*;
 
 mod core;
 
-
 pub struct LaunchSpark {
-	pub lessons: &'static [Lesson],
+	pub lessons: Vec<Lesson>,
 	pub kv_store: kv::Store,
 }
 
@@ -67,16 +66,17 @@ impl Spark for LaunchSpark {
 					yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close)))
 				]
 			),
-			LaunchState::Ready { student_record, now } => (
-				{
-					let ready_count = student_record.new_or_rested_lessons(*now).len();
-					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center)
-				},
-				vec![
-					yard::button(format!("Take {}", TAKE_COUNT), ButtonState::default(link.callback(move |_| LaunchAction::Take))),
-					yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close))),
-				]
-			),
+			LaunchState::Ready { student_record, now } => {
+				let ready_count = student_record.new_or_rested_lessons(*now).len();
+				let take_count = TAKE_COUNT.min(ready_count);
+				(
+					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center),
+					vec![
+						yard::button(format!("Take {}", take_count), ButtonState::default(link.callback(move |_| LaunchAction::Take))),
+						yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close))),
+					]
+				)
+			}
 		};
 		let yard = status.pack_bottom(
 			10,
