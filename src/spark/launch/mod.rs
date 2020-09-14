@@ -2,6 +2,7 @@ use chrono::Local;
 use echo_lib::kv;
 use yui::prelude::*;
 use yui::prelude::yard::ButtonState;
+use yui::SenderLink;
 
 use crate::constants::TAKE_COUNT;
 use crate::core::{Lesson, StudentRecord};
@@ -34,7 +35,8 @@ impl Spark for LaunchSpark {
 					let lessons = student_record.next_lessons(TAKE_COUNT, now);
 					let resting_count = student_record.resting_lessons_count(now);
 					let quiz_spark = QuizSpark { lessons, resting_count };
-					ctx.start_prequel(quiz_spark, ctx.link().callback(LaunchAction::Record));
+					let sync_link = SyncLink::from(ctx.link().clone());
+					ctx.start_prequel(quiz_spark, sync_link.callback(LaunchAction::Record));
 				}
 				AfterFlow::Ignore
 			}
@@ -50,7 +52,7 @@ impl Spark for LaunchSpark {
 		}
 	}
 
-	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let (status, button_data) = match state {
 			LaunchState::Empty { rest_status } => (
 				{
@@ -63,7 +65,7 @@ impl Spark for LaunchSpark {
 					yard::label(text, StrokeColor::BodyOnBackground, Cling::Center)
 				},
 				vec![
-					yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close)))
+					yard::button("Close", ButtonState::enabled(link.clone().map(|_| LaunchAction::Close)))
 				]
 			),
 			LaunchState::Ready { student_record, now } => {
@@ -72,8 +74,8 @@ impl Spark for LaunchSpark {
 				(
 					yard::label(format!("{} lessons ready", ready_count), StrokeColor::BodyOnBackground, Cling::Center),
 					vec![
-						yard::button(format!("Take {}", take_count), ButtonState::default(link.callback(move |_| LaunchAction::Take))),
-						yard::button("Close", ButtonState::enabled(link.callback(move |_| LaunchAction::Close))),
+						yard::button(format!("Take {}", take_count), ButtonState::default(link.clone().map(|_| LaunchAction::Take))),
+						yard::button("Close", ButtonState::enabled(link.clone().map(|_| LaunchAction::Close))),
 					]
 				)
 			}

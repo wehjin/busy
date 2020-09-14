@@ -974,9 +974,9 @@ source = "git+https://github.com/wehjin/stringedit.git#7c5abff0e242d2210bebfb122
 
 [[package]]
 name = "syn"
-version = "1.0.40"
+version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "963f7d3cc59b59b9325165add223142bbf1df27655d07789f109896d353d8350"
+checksum = "6690e3e9f692504b941dc6c3b188fd28df054f7fb8469ab40680df52fdcc842b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1316,7 +1316,7 @@ dependencies = [
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#c8f955cc51efe0c326794139e610f42efed3bf64"
+source = "git+https://github.com/wehjin/yui.git#a4945be7a7045972132b86a9aae7b8041566e32e"
 dependencies = [
  "log",
  "ncurses",

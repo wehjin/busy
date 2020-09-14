@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use yui::Before;
+use yui::{Before, SenderLink};
 use yui::prelude::*;
 use yui::prelude::yard::ButtonState;
 
@@ -89,7 +89,7 @@ impl Spark for QuizSpark {
 		}
 	}
 
-	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		if state.lessons.len() == 0 {
 			let text = format!("No active lessons. {} resting.", state.resting_count);
 			Some(yard::label(text, StrokeColor::CommentOnBackground, Cling::Center))
@@ -97,16 +97,16 @@ impl Spark for QuizSpark {
 			let yard = if state.check_answer {
 				let content_yard = solution_body_yard(state);
 				let side_yard = side_yard(state, vec![
-					yard::button("Back", ButtonState::default(link.callback(move |_| QuizAction::Back))),
-					yard::button("Repeat", ButtonState::enabled(link.callback(move |_| QuizAction::Repeat))),
-					yard::button("Space", ButtonState::enabled(link.callback(move |_| QuizAction::Space))),
+					yard::button("Back", ButtonState::default(link.clone().map(|_| QuizAction::Back))),
+					yard::button("Repeat", ButtonState::enabled(link.clone().map(|_| QuizAction::Repeat))),
+					yard::button("Space", ButtonState::enabled(link.clone().map(|_| QuizAction::Space))),
 				]);
 				content_yard.pack_right(SIDE_WIDTH, side_yard)
 			} else {
 				let content_yard = challenge_body_yard(state);
 				let side_yard = side_yard(state, vec![
-					yard::button("Check Answer", ButtonState::default(link.callback(move |_| QuizAction::CheckAnswer))),
-					yard::button("Quit", ButtonState::enabled(link.callback(move |_| QuizAction::Quit))),
+					yard::button("Check Answer", ButtonState::default(link.clone().map(|_| QuizAction::CheckAnswer))),
+					yard::button("Quit", ButtonState::enabled(link.clone().map(|_| QuizAction::Quit))),
 				]);
 				content_yard.pack_right(SIDE_WIDTH, side_yard)
 			};
